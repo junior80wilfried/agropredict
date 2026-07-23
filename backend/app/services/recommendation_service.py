@@ -9,11 +9,12 @@ cultures candidates), puis calcule le revenu potentiel :
     revenu_potentiel_fcfa = rendement_estime_kg_ha x prix_estime_fcfa_kg x superficie_ha
 
 Les cultures sont classées par revenu potentiel décroissant. C'est la même
+"""
 logique que recommander_cultures() dans le notebook d'entraînement
 (Untitled9.ipynb), avec un raffinement : ici, "Type / Catégorie de la
 culture" est déduit de la culture candidate elle-même (Culture.categorie_agronomique),
 pas fixé à une valeur unique pour toutes les cultures — chaque culture est
-donc évaluée avec sa vraie catégorie agronomique.
+où évaluée avec sa vraie catégorie agronomique.
 
 Remplace l'ancienne formule pondérée (sol/saison/tendance de prix/rentabilité
 approximative), qui ne s'appuyait pas sur les modèles ML.

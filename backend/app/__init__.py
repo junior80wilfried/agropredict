@@ -13,6 +13,7 @@ def create_app(config_name: str | None = None) -> Flask:
     # sur "production" par défaut plutôt que "development" — fail-safe, jamais
     # de DEBUG=True accidentel en dehors d'une machine de dev configurée.
     config_name = config_name or os.getenv("FLASK_ENV", "production")
+    assert config_name is not None
     app = Flask(__name__)
     app.config.from_object(config_by_name[config_name])
 
