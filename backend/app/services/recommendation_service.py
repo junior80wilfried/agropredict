@@ -44,7 +44,6 @@ def recommander_cultures(conditions: dict, limite: int = 6) -> list[dict]:
         champ: valeur for champ, valeur in conditions.items()
         if champ in ALL_FIELDS and champ not in ("culture", "type_culture") and valeur is not None
     }
-    superficie_ha = conditions_communes.get("superficie_ha", 1.0)
 
     cultures = Culture.query.all()
     resultats = []
