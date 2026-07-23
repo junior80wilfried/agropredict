@@ -43,7 +43,7 @@ std::vector<std::string> GetCommandLineArguments() {
 
 std::string Utf8FromUtf16(const wchar_t* utf16_string) {
   if (utf16_string == nullptr) {
-    return std::string();
+    return {};
   }
   unsigned int target_length = ::WideCharToMultiByte(
       CP_UTF8, WC_ERR_INVALID_CHARS, utf16_string,
@@ -59,7 +59,7 @@ std::string Utf8FromUtf16(const wchar_t* utf16_string) {
       CP_UTF8, WC_ERR_INVALID_CHARS, utf16_string,
       input_length, utf8_string.data(), target_length, nullptr, nullptr);
   if (converted_length == 0) {
-    return std::string();
+    return {};
   }
   return utf8_string;
 }
