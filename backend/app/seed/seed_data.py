@@ -22,7 +22,9 @@ Utilisation : flask seed
 from __future__ import annotations
 
 import random
-from datetime import date, timedelta
+import secrets
+import string
+from datetime import date, timedelta, datetime, timezone
 
 from app.extensions import db
 from app.models.user import User
@@ -32,7 +34,14 @@ from app.models.prix import PrixRecord
 from app.models.parcelle import Parcelle
 from app.models.alerte import Alerte
 
-# nom, emoji, categorie_agronomique (= "Type / Catégorie de la culture" exact
+
+def generate_secure_password(length: int = 16) -> str:
+    """Génère un mot de passe sécurisé aléatoire."""
+    chars = string.ascii_letters + string.digits + string.punctuation
+    return ''.join(secrets.choice(chars) for _ in range(length))
+
+
+# nom, categorie_agronomique (= "Type / Catégorie de la culture" exact
 # du dataset ML), couleur, rendement_ref_kg_ha (moyenne dataset), cycle_jours
 # (estimation agronomique générale), sols_favorables (sol dominant dataset),
 # saison_favorable (saison dominante dataset), tolérance sécheresse
@@ -45,13 +54,13 @@ CULTURES = [
     ("Igname", "Tubercule", "#8B5E2A", 8891, 270, "Ferralitique / latéritique (sol rouge)", "Grande saison des pluies", False),
     ("Macabo", "Tubercule", "#9C6B30", 17917, 270, "Sableux (léger, sèche vite)", "Grande saison des pluies", False),
     ("Manioc", "Tubercule", "#C8892A", 11064, 300, "Ferralitique / latéritique (sol rouge)", "Grande saison des pluies", True),
-    ("Maïs","Céréale", "#2E6B28", 2319, 100, "Sableux (léger, sèche vite)", "Grande saison des pluies", False),
-    ("Mil","Céréale", "#A0782A", 847, 100, "Ferralitique / latéritique (sol rouge)", "Grande saison des pluies", True),
+    ("Maïs", "Céréale", "#2E6B28", 2319, 100, "Sableux (léger, sèche vite)", "Grande saison des pluies", False),
+    ("Mil", "Céréale", "#A0782A", 847, 100, "Ferralitique / latéritique (sol rouge)", "Grande saison des pluies", True),
     ("Patate douce", "Tubercule", "#C1622A", 14155, 120, "Sableux (léger, sèche vite)", "Grande saison des pluies", True),
-    ("Pomme de terre","Tubercule", "#8A6D3B", 14582, 100, "Limoneux (équilibré)", "Saison sèche (avec irrigation)", False),
-    ("Riz","Céréale", "#3A7CA5", 3011, 130, "Ferralitique / latéritique (sol rouge)", "Grande saison des pluies", False),
-    ("Soja","Légumineuse", "#6E8B3D", 1613, 100, "Limoneux (équilibré)", "Grande saison des pluies", False),
-    ("Sorgho","Céréale", "#A05C1A", 1853, 120, "Limoneux (équilibré)", "Petite saison des pluies", True),
+    ("Pomme de terre", "Tubercule", "#8A6D3B", 14582, 100, "Limoneux (équilibré)", "Saison sèche (avec irrigation)", False),
+    ("Riz", "Céréale", "#3A7CA5", 3011, 130, "Ferralitique / latéritique (sol rouge)", "Grande saison des pluies", False),
+    ("Soja", "Légumineuse", "#6E8B3D", 1613, 100, "Limoneux (équilibré)", "Grande saison des pluies", False),
+    ("Sorgho", "Céréale", "#A05C1A", 1853, 120, "Limoneux (équilibré)", "Petite saison des pluies", True),
     ("Taro", "Tubercule", "#7A5230", 8134, 270, "Sableux (léger, sèche vite)", "Grande saison des pluies", False),
     ("Tomate", "Légume / Maraîchage", "#C0392B", 15937, 90, "Ferralitique / latéritique (sol rouge)", "Saison sèche (avec irrigation)", False),
 ]
@@ -65,9 +74,9 @@ MARCHES = [
 ]
 
 ALERTES = [
-    ( "Prix du maïs en hausse", "Bon moment pour vendre — marché de Yaoundé favorable", "succes", "#2E6B28"),
-    ( "Pluies annoncées cette semaine", "Conditions idéales pour la plantation du manioc", "info", "#C8892A"),
-    ( "Stock de semences limité", "Approvisionnez-vous avant la fin du mois", "alerte", "#A05C1A"),
+    ("Prix du maïs en hausse", "Bon moment pour vendre — marché de Yaoundé favorable", "succes", "#2E6B28"),
+    ("Pluies annoncées cette semaine", "Conditions idéales pour la plantation du manioc", "info", "#C8892A"),
+    ("Stock de semences limité", "Approvisionnez-vous avant la fin du mois", "alerte", "#A05C1A"),
 ]
 
 # Prix moyen réel observé dans le dataset AgroPredict (FCFA/kg), utilisé
@@ -99,15 +108,21 @@ def seed_all():
     Alerte.query.delete()
     Culture.query.delete()
     Marche.query.delete()
+    User.query.delete()
     db.session.commit()
 
     print("→ Insertion des cultures...")
     cultures = {}
     for nom, cat, couleur, rendement, cycle, sols, saison, secheresse in CULTURES:
         culture = Culture(
-            nom=nom, categorie_agronomique=cat, couleur=couleur,
-            rendement_reference_kg_ha=rendement, cycle_jours=cycle,
-            sols_favorables=sols, saison_favorable=saison, tolerance_secheresse=secheresse,
+            nom=nom, 
+            categorie_agronomique=cat, 
+            couleur=couleur,
+            rendement_reference_kg_ha=rendement, 
+            cycle_jours=cycle,
+            sols_favorables=sols, 
+            saison_favorable=saison, 
+            tolerance_secheresse=secheresse,
         )
         db.session.add(culture)
         cultures[nom] = culture
@@ -122,7 +137,7 @@ def seed_all():
     db.session.commit()
 
     print("→ Génération de 6 mois d'historique de prix (FCFA/kg)...")
-    aujourdhui = date.today()
+    aujourdhui = datetime.now(timezone.utc).date()
     jours = 180
     for nom, culture in cultures.items():
         for marche in marches:
@@ -130,17 +145,25 @@ def seed_all():
             for i in range(0, jours, 7):  # un relevé hebdomadaire
                 d = aujourdhui - timedelta(days=jours - i)
                 db.session.add(PrixRecord(
-                    culture_id=culture.id, marche_id=marche.id,
-                    date=d, prix_fcfa_kg=round(serie[i], 1),
+                    culture_id=culture.id, 
+                    marche_id=marche.id,
+                    date=d, 
+                    prix_fcfa_kg=round(serie[i], 1),
                 ))
     db.session.commit()
 
     print("→ Création d'un utilisateur de démonstration...")
+    demo_password = generate_secure_password()
     demo = User(
-        nom="Kofi Mensah", email="demo@agrosense.cm", ville="Yaoundé",
-        region="Centre", telephone="+237600000000", agriculteur_depuis=2015,
+        nom="Kofi Mensah", 
+        email="demo@agrosense.cm", 
+        ville="Yaoundé",
+        region="Centre", 
+        telephone="+237600000000", 
+        agriculteur_depuis=2015,
+        email_verified=True,  # Vérifié par défaut pour la démo
     )
-    demo.set_password("demo1234")
+    demo.set_password(demo_password)
     db.session.add(demo)
     db.session.commit()
 
@@ -151,14 +174,24 @@ def seed_all():
     ]
     for culture, superficie, sol, statut in parcelles_demo:
         db.session.add(Parcelle(
-            user_id=demo.id, culture_id=culture.id, superficie_ha=superficie,
-            type_sol=sol, statut=statut, date_plantation=date.today() - timedelta(days=60),
+            user_id=demo.id, 
+            culture_id=culture.id, 
+            superficie_ha=superficie,
+            type_sol=sol, 
+            statut=statut, 
+            date_plantation=date.today() - timedelta(days=60),
         ))
     db.session.commit()
 
     print("→ Insertion des alertes...")
-    for emoji, titre, message, type_, couleur in ALERTES:
-        db.session.add(Alerte(emoji=emoji, titre=titre, message=message, type=type_, couleur=couleur))
+    for titre, message, type_, couleur in ALERTES:
+        db.session.add(Alerte(
+            titre=titre, 
+            message=message, 
+            type=type_, 
+            couleur=couleur
+        ))
     db.session.commit()
 
-    print("✓ Seed terminé. Compte de démo : demo@agrosense.cm / demo1234")
+    print(f"\n✅ Seed terminé. Compte de démo : demo@agrosense.cm / {demo_password}")
+    print("⚠️  Conservez ce mot de passe sécurisé !")

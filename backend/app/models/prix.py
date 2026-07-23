@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, timezone
 from app.extensions import db
 
 
@@ -17,7 +17,10 @@ class PrixRecord(db.Model):
     date = db.Column(db.Date, nullable=False, index=True)
     prix_fcfa_kg = db.Column(db.Float, nullable=False)
 
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    created_at = db.Column(
+        db.DateTime, 
+        default=lambda: datetime.now(timezone.utc)
+    )
 
     __table_args__ = (
         db.Index("ix_prix_culture_marche_date", "culture_id", "marche_id", "date"),

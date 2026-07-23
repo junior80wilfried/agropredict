@@ -1,3 +1,4 @@
+from datetime import datetime, timezone
 from app.extensions import db
 
 
@@ -22,6 +23,16 @@ class Culture(db.Model):
     sols_favorables = db.Column(db.String(200), nullable=False, default="Limoneux (équilibré)")
     saison_favorable = db.Column(db.String(40), nullable=False, default="Grande saison des pluies")
     tolerance_secheresse = db.Column(db.Boolean, default=False)
+
+    created_at = db.Column(
+        db.DateTime, 
+        default=lambda: datetime.now(timezone.utc)
+    )
+    updated_at = db.Column(
+        db.DateTime,
+        default=lambda: datetime.now(timezone.utc),
+        onupdate=lambda: datetime.now(timezone.utc)
+    )
 
     prix_records = db.relationship("PrixRecord", backref="culture", lazy="dynamic")
     parcelles = db.relationship("Parcelle", backref="culture", lazy="dynamic")

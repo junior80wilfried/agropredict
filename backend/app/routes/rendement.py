@@ -6,6 +6,7 @@ from app.ml.features import NOMINAL_FIELDS, ORDINAL_FIELDS, ORDRES, VALEURS_NOMI
 from app.services.rendement_service import calculer_rendement, historique_rendements, RendementError
 from app.schemas.rendement_schema import predire_rendement_schema, historique_rendement_schema
 from app.utils.validation import reponse_erreur_validation
+from app.extensions import limiter
 
 rendement_bp = Blueprint("rendement", __name__, url_prefix="/api/rendement")
 
@@ -14,6 +15,7 @@ _CHAMPS_FORMULAIRE = [c for c in NOMINAL_FIELDS if c not in ("culture", "type_cu
 
 @rendement_bp.get("/champs")
 @jwt_required()
+@limiter.limit("10 per minute")
 def champs_formulaire():
     """Valeurs valides pour chaque champ du formulaire de prédiction (21
     champs de campagne), pour construire dynamiquement les listes
@@ -26,6 +28,7 @@ def champs_formulaire():
 
 @rendement_bp.post("/predire")
 @jwt_required()
+@limiter.limit("10 per minute")
 def predire():
     user_id = int(get_jwt_identity())
     try:
@@ -43,6 +46,7 @@ def predire():
 
 @rendement_bp.get("/historique")
 @jwt_required()
+@limiter.limit("20 per minute")
 def historique():
     user_id = int(get_jwt_identity())
     try:

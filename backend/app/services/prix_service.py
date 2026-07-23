@@ -1,30 +1,36 @@
 from __future__ import annotations
 
 from datetime import date, timedelta
+from sqlalchemy import func
 
+from app.extensions import db
 from app.models.culture import Culture
 from app.models.marche import Marche
 from app.models.prix import PrixRecord
 
 
 def historique_prix(culture_id: int, marche_id: int | None = None, jours: int = 180) -> list[dict]:
-    query = PrixRecord.query.filter(
+    """Récupère l'historique des prix pour une culture, éventuellement filtré par marché.
+    
+    Utilise une agrégation SQL pour éviter de charger toutes les données en mémoire.
+    """
+    query = db.session.query(
+        PrixRecord.date,
+        func.avg(PrixRecord.prix_fcfa_kg).label('avg_prix')
+    ).filter(
         PrixRecord.culture_id == culture_id,
         PrixRecord.date >= date.today() - timedelta(days=jours),
-    )
+    ).group_by(PrixRecord.date)
+    
     if marche_id:
         query = query.filter(PrixRecord.marche_id == marche_id)
 
-    records = query.order_by(PrixRecord.date.asc()).all()
-    # Si plusieurs marchés, on agrège par date (moyenne) pour obtenir une
-    # seule série exploitable par le modèle.
-    par_date: dict[str, list[float]] = {}
-    for r in records:
-        par_date.setdefault(r.date.isoformat(), []).append(r.prix_fcfa_kg)
+    query = query.order_by(PrixRecord.date.asc())
+    records = query.all()
 
     return [
-        {"date": d, "prix_fcfa_kg": sum(v) / len(v)}
-        for d, v in sorted(par_date.items())
+        {"date": r.date.isoformat(), "prix_fcfa_kg": round(r.avg_prix, 1)}
+        for r in records
     ]
 
 
@@ -61,6 +67,7 @@ def resume_prix(culture: Culture, marche_id: int | None = None) -> dict:
 
 
 def marches_proches(culture_id: int, ville: str | None = None) -> list[dict]:
+    """Récupère les marchés proches avec leur prix actuel pour une culture."""
     query = Marche.query
     if ville:
         query = query.filter(Marche.ville == ville)

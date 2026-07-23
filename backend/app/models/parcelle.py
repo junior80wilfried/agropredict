@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, timezone
 from app.extensions import db
 
 
@@ -18,7 +18,15 @@ class Parcelle(db.Model):
     )  # Planté | En croissance | Récolte prochaine | Récolté
     date_plantation = db.Column(db.Date, nullable=True)
 
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    created_at = db.Column(
+        db.DateTime, 
+        default=lambda: datetime.now(timezone.utc)
+    )
+    updated_at = db.Column(
+        db.DateTime,
+        default=lambda: datetime.now(timezone.utc),
+        onupdate=lambda: datetime.now(timezone.utc)
+    )
 
     STATUT_COULEURS = {
         "Planté": "#C8892A",

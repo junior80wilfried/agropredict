@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from datetime import datetime, timezone
+
 from app.extensions import db
 from app.ml.features import ALL_FIELDS
 from app.ml.predicteur import predire_campagne
@@ -32,7 +34,12 @@ def calculer_rendement(user_id: int, data: dict) -> RendementPrediction:
     profil_campagne["culture"] = culture.nom
     profil_campagne["type_culture"] = culture.categorie_agronomique
 
-    resultat = predire_campagne(profil_campagne)
+    try:
+        resultat = predire_campagne(profil_campagne)
+    except Exception as e:
+        # Loguer l'erreur pour le débogage
+        db.current_app.logger.error(f"Erreur lors de la prédiction de rendement: {str(e)}")
+        raise RendementError("Une erreur est survenue lors de la prédiction. Veuillez réessayer.", 500)
 
     prediction = RendementPrediction(
         user_id=user_id,
@@ -43,6 +50,7 @@ def calculer_rendement(user_id: int, data: dict) -> RendementPrediction:
         prix_estime_fcfa_kg=resultat["prix_estime_fcfa_kg"],
         production_totale_kg=resultat["production_totale_kg"],
         revenu_estime_fcfa=resultat["revenu_estime_fcfa"],
+        created_at=datetime.now(timezone.utc),
     )
     db.session.add(prediction)
     db.session.commit()
@@ -51,7 +59,8 @@ def calculer_rendement(user_id: int, data: dict) -> RendementPrediction:
 
 
 def historique_rendements(user_id: int, culture_id: int | None = None) -> list[RendementPrediction]:
+    """Récupère l'historique des prédictions de rendement pour un utilisateur."""
     query = RendementPrediction.query.filter_by(user_id=user_id)
     if culture_id:
         query = query.filter_by(culture_id=culture_id)
-    return query.order_by(RendementPrediction.created_at.asc()).all()
+    return query.order_by(RendementPrediction.created_at.desc()).all()

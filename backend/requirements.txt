@@ -1,14 +1,29 @@
+# Framework et extensions Flask
 Flask==3.0.3
 Flask-SQLAlchemy==3.1.1
 Flask-Migrate==4.0.7
 Flask-JWT-Extended==4.6.0
 Flask-Cors==4.0.1
+
+# Base de données
 psycopg2-binary==2.9.9
-python-dotenv==1.0.1
+
+# Validation et sérialisation
 marshmallow==3.21.3
+
+# Machine Learning
 scikit-learn==1.6.1
 joblib==1.4.2
 pandas==2.2.2
 numpy==1.26.4
+
+# Sécurité
+itsdangerous==2.2.0
+flask-limiter==3.7.0
+
+# Utilitaires
+python-dotenv==1.0.1
+
+# Production
 gunicorn==22.0.0
 greenlet==3.2.4

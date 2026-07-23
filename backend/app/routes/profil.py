@@ -4,7 +4,7 @@ from flask import Blueprint, request, jsonify
 from flask_jwt_extended import jwt_required, get_jwt_identity
 from marshmallow import ValidationError
 
-from app.extensions import db
+from app.extensions import db, limiter
 from app.models.user import User
 from app.models.parcelle import Parcelle
 from app.models.culture import Culture
@@ -18,6 +18,7 @@ profil_bp = Blueprint("profil", __name__, url_prefix="/api/profil")
 
 @profil_bp.get("")
 @jwt_required()
+@limiter.limit("15 per minute")
 def profil():
     user_id = int(get_jwt_identity())
     utilisateur = User.query.get_or_404(user_id)
@@ -46,6 +47,7 @@ def profil():
 
 @profil_bp.post("/parcelles")
 @jwt_required()
+@limiter.limit("10 per minute")
 def ajouter_parcelle():
     user_id = int(get_jwt_identity())
     try:

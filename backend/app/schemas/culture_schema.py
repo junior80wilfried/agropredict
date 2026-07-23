@@ -21,19 +21,43 @@ class RecommandationCulturesSchema(Schema):
     par défaut (app.ml.features.DEFAULTS) pour l'appel aux modèles ML.
     """
 
-    type_sol = fields.String(load_default=None, allow_none=True, validate=validate.OneOf(TYPES_SOL_VALIDES))
-    saison = fields.String(load_default=None, allow_none=True, validate=validate.OneOf(SAISONS_VALIDES))
-    region = fields.String(load_default=None, allow_none=True)
-    superficie_ha = fields.Float(load_default=1.0, validate=validate.Range(min=0.01, max=100000))
+    type_sol = fields.String(
+        load_default=None, 
+        allow_none=True, 
+        validate=validate.OneOf(TYPES_SOL_VALIDES)
+    )
+    saison = fields.String(
+        load_default=None, 
+        allow_none=True, 
+        validate=validate.OneOf(SAISONS_VALIDES)
+    )
+    region = fields.String(
+        load_default=None, 
+        allow_none=True,
+        validate=validate.Length(max=120)
+    )
+    superficie_ha = fields.Float(
+        load_default=1.0, 
+        validate=validate.Range(min=0.01, max=100000)
+    )
 
 
 class AjouterParcelleSchema(Schema):
     """Valide le corps de requête de POST /api/profil/parcelles."""
 
     culture_id = fields.Integer(required=True, validate=validate.Range(min=1))
-    superficie_ha = fields.Float(load_default=1.0, validate=validate.Range(min=0.01, max=100000))
-    type_sol = fields.String(load_default=TYPES_SOL_VALIDES[0], validate=validate.OneOf(TYPES_SOL_VALIDES))
-    statut = fields.String(load_default="Planté", validate=validate.OneOf(STATUTS_PARCELLE_VALIDES))
+    superficie_ha = fields.Float(
+        load_default=1.0, 
+        validate=validate.Range(min=0.01, max=100000)
+    )
+    type_sol = fields.String(
+        load_default=TYPES_SOL_VALIDES[0], 
+        validate=validate.OneOf(TYPES_SOL_VALIDES)
+    )
+    statut = fields.String(
+        load_default="Planté", 
+        validate=validate.OneOf(STATUTS_PARCELLE_VALIDES)
+    )
 
 
 recommandation_culture_schema = RecommandationCulturesSchema()

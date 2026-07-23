@@ -14,7 +14,10 @@ def predict_yield(donnees: dict) -> float:
     """`donnees` : dict de champs API (snake_case, voir app/ml/features.py).
     Retourne le rendement estimé en kg/ha (toujours positif).
     """
-    modele = get_modele_rendement()
-    X = construire_dataframe(donnees)
-    prediction = float(modele.predict(X)[0])
-    return max(prediction, 0.0)
+    try:
+        modele = get_modele_rendement()
+        X = construire_dataframe(donnees)
+        prediction = float(modele.predict(X)[0])
+        return max(prediction, 0.0)
+    except Exception as e:
+        raise RuntimeError(f"Erreur lors de la prédiction de rendement: {str(e)}")

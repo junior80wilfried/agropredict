@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, timezone
 from app.extensions import db
 
 
@@ -27,7 +27,15 @@ class RendementPrediction(db.Model):
     production_totale_kg = db.Column(db.Float, nullable=False)
     revenu_estime_fcfa = db.Column(db.Float, nullable=False)
 
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    created_at = db.Column(
+        db.DateTime, 
+        default=lambda: datetime.now(timezone.utc)
+    )
+    updated_at = db.Column(
+        db.DateTime,
+        default=lambda: datetime.now(timezone.utc),
+        onupdate=lambda: datetime.now(timezone.utc)
+    )
 
     culture = db.relationship("Culture")
 

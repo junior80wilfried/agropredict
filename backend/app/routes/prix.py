@@ -6,12 +6,14 @@ from app.models.culture import Culture
 from app.services.prix_service import resume_prix, marches_proches
 from app.schemas.prix_schema import prix_culture_query_schema, marches_proches_query_schema
 from app.utils.validation import reponse_erreur_validation
+from app.extensions import limiter
 
 prix_bp = Blueprint("prix", __name__, url_prefix="/api/prix")
 
 
 @prix_bp.get("/<int:culture_id>")
 @jwt_required()
+@limiter.limit("30 per minute")
 def prix_culture(culture_id: int):
     culture = Culture.query.get_or_404(culture_id)
     try:
@@ -24,6 +26,7 @@ def prix_culture(culture_id: int):
 
 @prix_bp.get("/<int:culture_id>/marches")
 @jwt_required()
+@limiter.limit("30 per minute")
 def marches_pour_culture(culture_id: int):
     Culture.query.get_or_404(culture_id)
     try:

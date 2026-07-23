@@ -19,8 +19,11 @@ def predire_campagne(donnees: dict) -> dict:
     Retourne rendement (kg/ha), prix (FCFA/kg), et le revenu qui en découle
     pour la superficie renseignée.
     """
-    rendement_kg_ha = predict_yield(donnees)
-    prix_fcfa_kg = predict_price(donnees)
+    try:
+        rendement_kg_ha = predict_yield(donnees)
+        prix_fcfa_kg = predict_price(donnees)
+    except Exception as e:
+        raise RuntimeError(f"Erreur lors de la prédiction ML: {str(e)}")
 
     superficie_ha = donnees.get("superficie_ha") or 1.0
     production_totale_kg = rendement_kg_ha * superficie_ha

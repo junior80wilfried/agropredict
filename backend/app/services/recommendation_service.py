@@ -1,5 +1,3 @@
-from __future__ import annotations
-
 """Moteur de recommandation de cultures (écran "Cultures" de l'app mobile).
 
 Pour chaque culture du référentiel, prédit rendement et prix avec les deux
@@ -19,6 +17,9 @@ Remplace l'ancienne formule pondérée (sol/saison/tendance de prix/rentabilité
 approximative), qui ne s'appuyait pas sur les modèles ML.
 """
 
+from __future__ import annotations
+from concurrent.futures import ThreadPoolExecutor
+
 from app.ml.features import ALL_FIELDS
 from app.ml.predicteur import predire_campagne
 from app.models.culture import Culture
@@ -26,9 +27,9 @@ from app.models.culture import Culture
 
 def _label_rentabilite(score: float) -> str:
     if score >= 85:
-        return "Très élevé"
+        return "Très élevée"
     if score >= 60:
-        return "Élevé"
+        return "Élevée"
     if score >= 35:
         return "Moyen"
     return "Faible"
@@ -49,14 +50,25 @@ def recommander_cultures(conditions: dict, limite: int = 6) -> list[dict]:
     cultures = Culture.query.all()
     resultats = []
 
-    for culture in cultures:
-        profil = {
-            **conditions_communes,
-            "culture": culture.nom,
-            "type_culture": culture.categorie_agronomique,
-        }
-        prediction = predire_campagne(profil)
+    # Utiliser ThreadPoolExecutor pour paralléliser les prédictions
+    with ThreadPoolExecutor(max_workers=min(4, len(cultures))) as executor:
+        futures = []
+        for culture in cultures:
+            profil = {
+                **conditions_communes,
+                "culture": culture.nom,
+                "type_culture": culture.categorie_agronomique,
+            }
+            futures.append(executor.submit(predire_campagne, profil))
 
+        # Attendre tous les résultats
+        predictions = []
+        for future in futures:
+            predictions.append(future.result())
+
+    # Associer chaque prédiction à sa culture
+    for i, culture in enumerate(cultures):
+        prediction = predictions[i]
         sols_favorables = [s.strip() for s in culture.sols_favorables.split(",")]
         type_sol_demande = conditions_communes.get("type_sol")
         saison_demandee = conditions_communes.get("saison")

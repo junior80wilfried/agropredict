@@ -1,4 +1,4 @@
-from datetime import datetime, date
+from datetime import datetime, date, timezone
 from werkzeug.security import generate_password_hash, check_password_hash
 from app.extensions import db
 
@@ -16,7 +16,20 @@ class User(db.Model):
     region = db.Column(db.String(120), nullable=True, default="Centre")
     agriculteur_depuis = db.Column(db.Integer, nullable=True)  # année, ex: 2015
 
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    # Champs de sécurité
+    email_verified = db.Column(db.Boolean, default=False)
+    email_verification_token = db.Column(db.String(200), nullable=True)
+    last_login = db.Column(db.DateTime, nullable=True)
+    failed_login_attempts = db.Column(db.Integer, default=0)
+    account_locked = db.Column(db.Boolean, default=False)
+    lock_until = db.Column(db.DateTime, nullable=True)
+
+    created_at = db.Column(db.DateTime, default=lambda: datetime.now(timezone.utc))
+    updated_at = db.Column(
+        db.DateTime, 
+        default=lambda: datetime.now(timezone.utc),
+        onupdate=lambda: datetime.now(timezone.utc)
+    )
 
     parcelles = db.relationship(
         "Parcelle", backref="proprietaire", lazy="dynamic", cascade="all, delete-orphan"
@@ -26,10 +39,36 @@ class User(db.Model):
     )
 
     def set_password(self, mot_de_passe: str) -> None:
-        self.password_hash = generate_password_hash(mot_de_passe)
+        """Hache le mot de passe avec un sel aléatoire."""
+        self.password_hash = generate_password_hash(mot_de_passe, method='pbkdf2:sha256')
 
     def check_password(self, mot_de_passe: str) -> bool:
+        """Vérifie si le mot de passe correspond au hash stocké."""
         return check_password_hash(self.password_hash, mot_de_passe)
+
+    def increment_failed_logins(self) -> None:
+        """Incrémente le compteur d'échecs de connexion."""
+        self.failed_login_attempts += 1
+        if self.failed_login_attempts >= 5:
+            self.account_locked = True
+            self.lock_until = datetime.now(timezone.utc) + timedelta(minutes=15)
+        db.session.commit()
+
+    def reset_failed_logins(self) -> None:
+        """Réinitialise le compteur d'échecs de connexion."""
+        self.failed_login_attempts = 0
+        self.account_locked = False
+        self.lock_until = None
+        db.session.commit()
+
+    def is_locked(self) -> bool:
+        """Vérifie si le compte est verrouillé."""
+        if not self.account_locked:
+            return False
+        if self.lock_until and self.lock_until < datetime.now(timezone.utc):
+            self.reset_failed_logins()
+            return False
+        return True
 
     @property
     def initiales(self) -> str:
@@ -55,4 +94,5 @@ class User(db.Model):
             "agriculteur_depuis": self.agriculteur_depuis,
             "annees_experience": self.annees_experience,
             "initiales": self.initiales,
+            "email_verified": self.email_verified,
         }

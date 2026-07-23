@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, timezone
 from app.extensions import db
 
 
@@ -14,7 +14,15 @@ class Alerte(db.Model):
     couleur = db.Column(db.String(9), nullable=False, default="#C8892A")
 
     region = db.Column(db.String(120), nullable=True)  # None = visible partout
-    created_at = db.Column(db.DateTime, default=datetime.utcnow)
+    created_at = db.Column(
+        db.DateTime, 
+        default=lambda: datetime.now(timezone.utc)
+    )
+    updated_at = db.Column(
+        db.DateTime,
+        default=lambda: datetime.now(timezone.utc),
+        onupdate=lambda: datetime.now(timezone.utc)
+    )
     actif = db.Column(db.Boolean, default=True)
 
     def to_dict(self) -> dict:

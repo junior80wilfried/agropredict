@@ -1,3 +1,4 @@
+from datetime import datetime, timezone
 from app.extensions import db
 
 
@@ -10,6 +11,16 @@ class Marche(db.Model):
     region = db.Column(db.String(120), nullable=False)
     latitude = db.Column(db.Float, nullable=True)
     longitude = db.Column(db.Float, nullable=True)
+
+    created_at = db.Column(
+        db.DateTime, 
+        default=lambda: datetime.now(timezone.utc)
+    )
+    updated_at = db.Column(
+        db.DateTime,
+        default=lambda: datetime.now(timezone.utc),
+        onupdate=lambda: datetime.now(timezone.utc)
+    )
 
     prix_records = db.relationship("PrixRecord", backref="marche", lazy="dynamic")
 
